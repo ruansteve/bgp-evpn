@@ -30,8 +30,10 @@ from neutron_dynamic_routing.api.rpc.agentnotifiers import bgp_dr_rpc_agent_api 
 from neutron_dynamic_routing.api.rpc.handlers import bgp_speaker_rpc as bs_rpc
 from neutron_dynamic_routing.db import bgp_db
 from neutron_dynamic_routing.db import bgp_dragentscheduler_db
+from neutron_dynamic_routing.db import bgp_vrf_db
 from neutron_dynamic_routing.extensions import bgp as bgp_ext
 from neutron_dynamic_routing.extensions import bgp_dragentscheduler as dras_ext
+from neutron_dynamic_routing.extensions import vrf as vrf_ext
 from neutron_dynamic_routing.services.bgp.common import constants as bgp_consts
 
 PLUGIN_NAME = bgp_ext.BGP_EXT_ALIAS + '_svc_plugin'
@@ -40,9 +42,11 @@ LOG = logging.getLogger(__name__)
 
 class BgpPlugin(service_base.ServicePluginBase,
                 bgp_db.BgpDbMixin,
+                bgp_vrf_db.BGPVRFPluginDb,
                 bgp_dragentscheduler_db.BgpDrAgentSchedulerDbMixin):
 
     supported_extension_aliases = [bgp_ext.BGP_EXT_ALIAS,
+                                   vrf_ext.BGPVRF_EXT_ALIAS,
                                    dras_ext.BGP_DRAGENT_SCHEDULER_EXT_ALIAS]
 
     def __init__(self):
