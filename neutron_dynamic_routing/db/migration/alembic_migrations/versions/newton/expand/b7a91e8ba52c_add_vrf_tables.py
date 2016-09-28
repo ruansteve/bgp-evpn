@@ -57,4 +57,19 @@ def upgrade():
                   sa.ForeignKey('routers.id', ondelete='CASCADE'),
                   nullable=False),
         sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint(vrf_id, router_id)
+    )
+
+    op.create_table(
+        'bgp_speaker_vrf_bindings',
+        sa.Column('id', sa.String(length=36), nullable=False),
+        sa.Column('tenant_id', sa.String(length=255), nullable=True),
+        sa.Column('vrf_id', sa.String(length=36),
+                  sa.ForeignKey('vrfs.id', ondelete='CASCADE'),
+                  nullable=False),
+        sa.Column('speaker_id', sa.String(length=36),
+                  sa.ForeignKey('bgp_speakers.id', ondelete='CASCADE'),
+                  nullable=False),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint(vrf_id, speaker_id)
     )

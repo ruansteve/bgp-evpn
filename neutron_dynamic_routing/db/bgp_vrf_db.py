@@ -32,6 +32,22 @@ from neutron_dynamic_routing.services.bgp.common import utils
 LOG = log.getLogger(__name__)
 
 
+class BgpSpeakerVrfBinding(model_base.BASEV2, models_v2.HasId,
+                           models_v2.HasTenant):
+
+    """Represents a mapping between BGP speaker and VRF"""
+
+    __tablename__ = 'bgp_speaker_vrf_bindings'
+
+    speaker_id = sa.Column(sa.String(length=36),
+                               sa.ForeignKey('bgp_speakers.id'),
+                               nullable=False)
+    vrf_id = sa.Column(sa.String(length=36),
+                       sa.ForeignKey('vrfs.id'),
+                       nullable=False)
+    sa.UniqueConstraint(speaker_id, vrf_id)
+
+
 class BGPVRFRouterAssociation(model_base.BASEV2, models_v2.HasId,
                               models_v2.HasTenant):
     """Represents the association between a vrf and a router."""
@@ -44,10 +60,6 @@ class BGPVRFRouterAssociation(model_base.BASEV2, models_v2.HasId,
                           sa.ForeignKey('routers.id'),
                           nullable=False)
     sa.UniqueConstraint(vrf_id, router_id)
-    router = orm.relationship("Router",
-                              backref=orm.backref('vrf_associations',
-                                                  cascade='all'),
-                              lazy='joined',)
 
 
 class BGPVRF(model_base.BASEV2, models_v2.HasId, models_v2.HasTenant):
@@ -224,17 +236,54 @@ class BGPVRFPluginDb(common_db_mixin.CommonDbMixin):
             context.session.delete(router_assoc_db)
         return router_assoc
 
-    def add_vrf_speaker_assoc(self, context, vrf_id,
-                              speaker_id):
+    def _make_speaker_assoc_dict(self, speaker_assoc_db, fields=None):
+        res = {'id': speaker_assoc_db['id'],
+               'vrf_id': speaker_assoc_db['vrf_id'],
+               'speaker_id': speaker_assoc_db['speaker_id']}
+        return self._fields(res, fields)
+
+    def _get_speaker_assoc(self, context, vrf_id, speaker_id):
+        try:
+            query = self._model_query(context, BgpSpeakerVrfBinding)
+            return query.filter(BgpSpeakerVrfBinding.vrf_id == vrf_id,
+                                BgpSpeakerVrfBinding.speaker_id == speaker_id,
+                                ).one()
+        except exc.NoResultFound:
+            raise vrf_ext.BGPVRFSpeakerAssocNotFound(vrf_id=vrf_id,
+                                                    speaker_id=speaker_id)
+
+    def add_vrf_speaker_assoc(self, context, vrf_id, speaker_association):
+        speaker_id = speaker_association['speaker_id']
         LOG.info(_LI("Add speaker association %(speaker_id)s "
                      "for BGPVRF %(vrf_id)s"),
                  {'speaker_id': speaker_id, 'vrf_id': vrf_id})
+        try:
+            with context.session.begin(subtransactions=True):
+                speaker_assoc_db = BgpSpeakerVrfBinding(
+                    id=uuidutils.generate_uuid(),
+                    vrf_id=vrf_id,
+                    speaker_id=speaker_id)
+                context.session.add(speaker_assoc_db)
+            return self._make_speaker_assoc_dict(speaker_assoc_db)
+        except db_exc.DBDuplicateEntry:
+            LOG.warning(_LW("Speaker %(speaker_id)s is already associated to "
+                            "BGPVRF %(vrf_id)s"),
+                        {'speaker_id': speaker_id,
+                         'vrf_id': vrf_id})
+            raise vrf_ext.BGPVRFSpeakerAssocAlreadyExists(
+                vrf_id=vrf_id, speaker_id=speaker_id)
 
-    def remove_vrf_speaker_assoc(self, context, vrf_id,
-                                 speaker_id):
+    def remove_vrf_speaker_assoc(self, context, vrf_id, speaker_association):
+        speaker_id = speaker_association['speaker_id']
         LOG.info(_LI("deleting speaker association %(speaker_id)s "
-                     "for BGPVRF %s"),
+                     "for BGPVRF %(vrf_id)s"),
                  {'speaker_id': speaker_id, 'vrf_id': vrf_id})
+        with context.session.begin():
+            speaker_assoc_db = self._get_speaker_assoc(context,
+                                                     vrf_id, speaker_id)
+            speaker_assoc = self._make_speaker_assoc_dict(speaker_assoc_db)
+            context.session.delete(speaker_assoc_db)
+        return speaker_assoc
 
     def get_vrf_speaker_assoc(self, context, assoc_id, vrf_id,
                               fields=None):

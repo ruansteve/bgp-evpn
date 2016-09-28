@@ -71,6 +71,16 @@ class BGPVRFDriverError(n_exc.NeutronException):
     message = _("%(method)s failed.")
 
 
+class BGPVRFSpeakerAssocNotFound(n_exc.NotFound):
+    message = _("BGP VRF %(vrf_id)s speaker %(speaker_id)s "
+                "association could not be found ")
+
+
+class BGPVRFSpeakerAssocAlreadyExists(n_exc.BadRequest):
+    message = _("Speaker %(speaker_id)s is already associated to "
+                "BGP VRF %(vrf_id)s")
+
+
 def _validate_rt_list(data, valid_values=None):
     if data is None or data is "":
         return

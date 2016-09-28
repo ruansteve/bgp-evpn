@@ -102,6 +102,10 @@ class BgpSpeaker(model_base.BASEV2,
                                 cascade='all, delete, delete-orphan',
                                 lazy='joined')
     ip_version = sa.Column(sa.Integer, nullable=False, autoincrement=False)
+    vrfs = orm.relationship(bgp_vrf_db.BgpSpeakerVrfBinding,
+                            backref='bgp_speaker_vrf_bindings',
+                            cascade='all, delete, delete-orphan',
+                            lazy='joined')
 
 
 class BgpPeer(model_base.BASEV2,
@@ -414,9 +418,11 @@ class BgpDbMixin(common_db.CommonDbMixin):
                  'advertise_tenant_networks'}
         peer_bindings = bgp_speaker['peers']
         network_bindings = bgp_speaker['networks']
+        vrf_bindings = bgp_speaker['vrfs']
         res = dict((k, bgp_speaker[k]) for k in attrs)
         res['peers'] = [x.bgp_peer_id for x in peer_bindings]
         res['networks'] = [x.network_id for x in network_bindings]
+        res['vrfs'] = [x.vrf_id for x in vrf_bindings]
         return self._fields(res, fields)
 
     def _make_advertised_routes_dict(self, routes):

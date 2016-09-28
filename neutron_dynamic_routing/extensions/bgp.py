@@ -78,6 +78,11 @@ RESOURCE_ATTRIBUTE_MAP = {
                                       'is_visible': True, 'default': True,
                                       'required_by_policy': False,
                                       'enforce_policy': True},
+        'vrfs': {'allow_post': False, 'allow_put': False,
+                 'validate': {'type:uuid_list': None},
+                 'is_visible': True, 'default': [],
+                 'required_by_policy': False,
+                 'enforce_policy': True},
     },
     'bgp-peers': {
         'id': {'allow_post': False, 'allow_put': False,
@@ -190,6 +195,8 @@ class Bgp(extensions.ExtensionDescriptor):
                        'remove_bgp_peer': 'PUT',
                        'add_gateway_network': 'PUT',
                        'remove_gateway_network': 'PUT',
+                       'add_bgp_vpn': 'PUT',
+                       'remove_bgp_vpn': 'PUT',
                        'get_advertised_routes': 'GET'}}
         exts = rh.build_resource_info(plural_mappings,
                                       RESOURCE_ATTRIBUTE_MAP,
