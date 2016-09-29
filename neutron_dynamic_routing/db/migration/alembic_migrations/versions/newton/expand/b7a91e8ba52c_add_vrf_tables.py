@@ -37,7 +37,7 @@ def upgrade():
         'vrfs',
         sa.Column('name', sa.String(255), nullable=True),
         sa.Column('id', sa.String(length=36), nullable=False),
-        sa.Column('tenant_id', sa.String(length=255), nullable=True),
+        sa.Column('project_id', sa.String(length=255), nullable=True),
         sa.Column('type', vrf_type, nullable=False),
         sa.Column('import_targets', sa.String(255), nullable=True),
         sa.Column('export_targets', sa.String(255), nullable=True),
@@ -49,7 +49,7 @@ def upgrade():
     op.create_table(
         'vrf_router_bindings',
         sa.Column('id', sa.String(length=36), nullable=False),
-        sa.Column('tenant_id', sa.String(length=255), nullable=True),
+        sa.Column('project_id', sa.String(length=255), nullable=True),
         sa.Column('vrf_id', sa.String(length=36),
                   sa.ForeignKey('vrfs.id', ondelete='CASCADE'),
                   nullable=False),
@@ -63,7 +63,7 @@ def upgrade():
     op.create_table(
         'bgp_speaker_vrf_bindings',
         sa.Column('id', sa.String(length=36), nullable=False),
-        sa.Column('tenant_id', sa.String(length=255), nullable=True),
+        sa.Column('project_id', sa.String(length=255), nullable=True),
         sa.Column('vrf_id', sa.String(length=36),
                   sa.ForeignKey('vrfs.id', ondelete='CASCADE'),
                   nullable=False),
